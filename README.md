@@ -1,4 +1,4 @@
-# Chat Question Navigator
+# Chat-Navigator
 
 一个面向长对话场景的 Chrome Extension（Manifest V3），用于在 AI 对话页面中提取用户提问，并提供右侧悬浮导航，帮助快速回到历史问题位置。
 
