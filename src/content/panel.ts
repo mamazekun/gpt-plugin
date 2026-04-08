@@ -7,10 +7,16 @@ interface PanelCallbacks {
 }
 
 type PanelVisibilityState = 'hidden' | 'collapsed' | 'expanded' | 'closing';
+type PanelTheme = 'light' | 'dark';
 
 const SHELL_ROOT_ID = 'mzk-question-nav-shell';
 const COLLAPSE_DELAY_MS = 380;
 const MAX_VISIBLE_ITEMS = 7;
+const THEME_STORAGE_KEY = 'mzk-question-nav-theme';
+const MOON_ICON_SVG =
+  '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+const SUN_ICON_SVG =
+  '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.2M12 19.8V22M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M2 12h2.2M19.8 12H22M4.9 19.1l1.6-1.6M17.5 6.5l1.6-1.6"/></svg>';
 
 export class QuestionPanel {
   private shell: HTMLElement;
@@ -18,9 +24,11 @@ export class QuestionPanel {
   private trigger: HTMLElement;
   private list: HTMLElement;
   private searchInput: HTMLInputElement;
+  private themeToggleButton: HTMLButtonElement;
   private callbacks: PanelCallbacks;
 
   private state: PanelVisibilityState = 'hidden';
+  private theme: PanelTheme = 'light';
   private collapseTimer: number | null = null;
   private isOverTrigger = false;
   private isOverPanel = false;
@@ -37,10 +45,16 @@ export class QuestionPanel {
     this.trigger = this.shell.querySelector<HTMLElement>('.mzk-question-nav__trigger') as HTMLElement;
     this.list = this.shell.querySelector<HTMLElement>('.mzk-question-nav__list') as HTMLElement;
     this.searchInput = this.shell.querySelector<HTMLInputElement>('.mzk-question-nav__search') as HTMLInputElement;
+    this.themeToggleButton = this.shell.querySelector<HTMLButtonElement>(
+      '.mzk-question-nav__theme-toggle',
+    ) as HTMLButtonElement;
+    this.theme = this.loadTheme();
 
     this.bindHoverEvents();
     this.bindSearchEvents();
+    this.bindThemeEvents();
     this.bindListEvents();
+    this.applyTheme();
     this.applyState();
   }
 
@@ -58,12 +72,19 @@ export class QuestionPanel {
         <span class="mzk-question-nav__trigger-bar"></span>
       </div>
       <aside class="mzk-question-nav__panel">
-        <input
-          type="text"
-          class="mzk-question-nav__search"
-          placeholder="Search questions"
-          aria-label="Search questions"
-        />
+        <div class="mzk-question-nav__toolbar">
+          <input
+            type="text"
+            class="mzk-question-nav__search"
+            placeholder="Search questions"
+            aria-label="Search questions"
+          />
+          <button
+            type="button"
+            class="mzk-question-nav__theme-toggle"
+            aria-label="切换主题"
+          >${MOON_ICON_SVG}</button>
+        </div>
         <div class="mzk-question-nav__list"></div>
       </aside>
     `;
@@ -129,6 +150,14 @@ export class QuestionPanel {
     });
   }
 
+  private bindThemeEvents(): void {
+    this.themeToggleButton.addEventListener('click', () => {
+      this.theme = this.theme === 'light' ? 'dark' : 'light';
+      this.applyTheme();
+      this.saveTheme();
+    });
+  }
+
   private bindListEvents(): void {
     // Use event delegation to avoid rebinding listeners on each render.
     this.list.addEventListener('click', (event) => {
@@ -170,6 +199,22 @@ export class QuestionPanel {
 
   private applyState(): void {
     this.shell.dataset.state = this.state;
+  }
+
+  private applyTheme(): void {
+    this.shell.dataset.theme = this.theme;
+    const nextTheme = this.theme === 'light' ? 'dark' : 'light';
+    this.themeToggleButton.innerHTML = nextTheme === 'dark' ? MOON_ICON_SVG : SUN_ICON_SVG;
+    this.themeToggleButton.title = `切换到${nextTheme === 'dark' ? '深色' : '浅色'}主题`;
+  }
+
+  private loadTheme(): PanelTheme {
+    const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+    return storedTheme === 'dark' ? 'dark' : 'light';
+  }
+
+  private saveTheme(): void {
+    window.localStorage.setItem(THEME_STORAGE_KEY, this.theme);
   }
 
   private cancelCollapse(): void {
